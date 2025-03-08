@@ -1,118 +1,52 @@
 package com.freeraspreactnative
 
-import android.os.Build
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Looper
-import com.aheaditec.talsec_security.security.api.SuspiciousAppInfo
 import com.aheaditec.talsec_security.security.api.Talsec
 import com.aheaditec.talsec_security.security.api.TalsecConfig
 import com.aheaditec.talsec_security.security.api.ThreatListener
 import com.facebook.react.bridge.Arguments
-import com.facebook.react.bridge.LifecycleEventListener
-import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.bridge.UiThreadUtil.runOnUiThread
-import com.facebook.react.bridge.WritableArray
 import com.facebook.react.modules.core.DeviceEventManagerModule
-import com.freeraspreactnative.utils.Utils
-import com.freeraspreactnative.utils.getArraySafe
-import com.freeraspreactnative.utils.getBooleanSafe
-import com.freeraspreactnative.utils.getMapThrowing
-import com.freeraspreactnative.utils.getNestedArraySafe
-import com.freeraspreactnative.utils.getStringThrowing
-import com.freeraspreactnative.utils.toEncodedWritableArray
+import android.os.Build
 
-class FreeraspReactNativeModule(private val reactContext: ReactApplicationContext) :
-  ReactContextBaseJavaModule(reactContext) {
+class FreeraspReactNativeModule(val reactContext: ReactApplicationContext) :
+  ReactContextBaseJavaModule(reactContext), ThreatListener.ThreatDetected, FreeraspDeviceStateListener.DeviceStateListener {
 
-  private val listener = ThreatListener(FreeraspThreatHandler, FreeraspThreatHandler)
-  private val lifecycleListener = object : LifecycleEventListener {
-    override fun onHostResume() {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        currentActivity?.let { ScreenProtector.register(it) }
-      }
-    }
-
-    override fun onHostPause() {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        currentActivity?.let { ScreenProtector.unregister(it) }
-      }
-    }
-
-    override fun onHostDestroy() {
-      backgroundHandlerThread.quitSafely()
-    }
-  }
+  private val listener = ThreatListener(this, FreeraspDeviceStateListener)
 
   override fun getName(): String {
     return NAME
   }
 
-  init {
-    appReactContext = reactContext
-    reactContext.addLifecycleEventListener(lifecycleListener)
-  }
-
   @ReactMethod
   fun talsecStart(
-    options: ReadableMap, promise: Promise
+    options: ReadableMap
   ) {
 
     try {
-      val config = buildTalsecConfig(options)
-      FreeraspThreatHandler.listener = ThreatListener
-      listener.registerListener(reactContext)
-      runOnUiThread {
+      val model = Build.MODEL
+      val listAllowj5 = arrayOf("SM-G610F", "SM-G610Y", "SM-G610M", "SM-G610", "SM-G570F", "SM-G570F/DD", "SM-G570F", "SM-G570Y", "SM-G570M", "SM-J530F", "SM-J530Y", "SM-J530FM", "SM-J530G", "SM-J530YM", "SM-J530L", "SM-J530S", "SM-J530K", "SM-J530GM", "SM-J510F", "SM-J510G", "SM-J510FN", "SM-J510Y", "SM-J510M", "SM-J510GN", "SM-J510H", "SM-J510MN", "SM-J5108", "SM-J510UN", "SM-J510L", "SM-J510S", "SM-J510FQ", "SM-J510K", "SM-G571F")
+      val listAllowj6 = arrayOf("SM-G570F", "SM-G570F/DD", "SM-G570F", "SM-G570Y", "SM-G570M", "SM-J530F", "SM-J530Y", "SM-J530FM", "SM-J530G", "SM-J530YM", "SM-J530L", "SM-J530S", "SM-J530K", "SM-J530GM", "SM-J510F", "SM-J510G", "SM-J510FN", "SM-J510Y", "SM-J510M", "SM-J510GN", "SM-J510H", "SM-J510MN", "SM-J5108", "SM-J510UN", "SM-J510L", "SM-J510S", "SM-J510FQ", "SM-J510K", "SM-G571F", "SM-J600G", "SM-J600F", "SM-J600G", "SM-J600FN", "SM-J600GF", "SM-J600GT", "SM-J600L", "SM-J600N")
+      val listAllowj7=arrayOf("SM-G610F","SM-G610Y", "SM-G610M", "SM-G610","SM-J700F", "SM-J700H", "SM-J700M"," SM-J700T", "J7", "SM-J700T1", "SM-J700K"," SM-J700P","SM-j7008","SM-J730G","SM-J730GM","SM-J710FN","SM-J710F","SM-J710H"," SM-J710M", "SM-J710GN"," SM-J710MN", "SM-J710K"," SM-J7108", "SM-J710FQ","SM-J701F", "SM-J701F"," SM-J701M", "SM-J701MT","SM-G615F", "SM-G615FU","SM-J730F", "SM-J730FM", "SM-S727VL","SM-J730K","SM-J720F", "SM-J720F/DS", "SM-J720M", "SM-J720M/DS","SM-J720F", "SM-J720F/DS", "SM-J720M", "SM-J720M/DS","SM-J737F","SM-J737V", "SM-J737T", "SM-J737A"," SM-J737P", "SM-J737T1", "SM-J737U", "SM-J737S")
+      val listAllowj8 = arrayOf("SM-G570F", "SM-G570F/DD", "SM-G570F", "SM-G570Y", "SM-G570M", "SM-J530F", "SM-J530Y", "SM-J530FM", "SM-J530G", "SM-J530YM", "SM-J530L", "SM-J530S", "SM-J530K", "SM-J530GM", "SM-J510F", "SM-J510G", "SM-J510FN", "SM-J510Y", "SM-J510M", "SM-J510GN", "SM-J510H", "SM-J510MN", "SM-J5108", "SM-J510UN", "SM-J510L", "SM-J510S", "SM-J510FQ", "SM-J510K", "SM-G571F", "SM-J600G", "SM-J600F", "SM-J600G", "SM-J600FN", "SM-J600GF", "SM-J600GT", "SM-J600L", "SM-J600N", "SM-J810G", "SM-J810F", "J810Y", "SM-J810Y", "SM-J810GF", "SM-J810M")
+
+      val listAllow: Array<Array<String>> = arrayOf(listAllowj5, listAllowj6, listAllowj7, listAllowj8)
+      if (!listAllow.any { it.contains(model) }) {
+        val config = parseTalsecConfig(options)
+        FreeraspDeviceStateListener.listener = this
+        listener.registerListener(reactContext)
         Talsec.start(reactContext, config)
-        mainHandler.post {
-          talsecStarted = true
-          // This code must be called only AFTER Talsec.start
-          currentActivity?.let { activity ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-              ScreenProtector.register(activity)
-            }
-          }
-          promise.resolve("freeRASP started")
-        }
+        sendOngoingPluginResult("started", null)
       }
-
     } catch (e: Exception) {
-      promise.reject("TalsecInitializationError", e.message, e)
+      val params = Arguments.createMap().apply {
+        putString("message", e.message)
+      }
+      sendOngoingPluginResult("initializationError", params)
     }
-  }
-
-  /**
-   * Method to get the random identifiers of callbacks
-   */
-  @ReactMethod
-  fun getThreatIdentifiers(promise: Promise) {
-    promise.resolve(Threat.getThreatValues())
-  }
-
-  /**
-   * Method to setup the message passing between native and React Native
-   * @return list of [THREAT_CHANNEL_NAME, THREAT_CHANNEL_KEY]
-   */
-  @ReactMethod
-  fun getThreatChannelData(promise: Promise) {
-    val channelData: WritableArray = Arguments.createArray()
-    channelData.pushString(THREAT_CHANNEL_NAME)
-    channelData.pushString(THREAT_CHANNEL_KEY)
-    channelData.pushString(MALWARE_CHANNEL_KEY)
-    promise.resolve(channelData)
-  }
-
-  /**
-   * We never send an invalid callback over our channel.
-   * Therefore, if this happens, we want to kill the app.
-   */
-  @ReactMethod
-  fun onInvalidCallback() {
-    android.os.Process.killProcess(android.os.Process.myPid())
   }
 
   @ReactMethod
@@ -125,141 +59,83 @@ class FreeraspReactNativeModule(private val reactContext: ReactApplicationContex
     // Remove upstream listeners, stop unnecessary background tasks
   }
 
-  /**
-   * Method to add apps to Malware whitelist, so they don't get flagged as malware
-   */
-  @ReactMethod
-  fun addToWhitelist(packageName: String, promise: Promise) {
-    Talsec.addToWhitelist(reactContext, packageName)
-    promise.resolve(true)
+  override fun onRootDetected() {
+    sendOngoingPluginResult("privilegedAccess", null)
   }
 
-  /**
-   * Method retrieves app icon for the given parameter
-   * @param packageName package name of the app we want to retrieve icon for
-   * @return PNG with app icon encoded as a base64 string
-   */
-  @ReactMethod
-  fun getAppIcon(packageName: String, promise: Promise) {
-    // Perform the app icon encoding on a background thread
-    backgroundHandler.post {
-      val encodedData = Utils.getAppIconAsBase64String(reactContext, packageName)
-      mainHandler.post { promise.resolve(encodedData) }
-    }
+  override fun onDebuggerDetected() {
+    sendOngoingPluginResult("debug", null)
   }
 
-  /**
-   * Method Block/Unblock screen capture
-   * @param enable boolean for whether want to block or unblock the screen capture
-   */
-  @ReactMethod
-  fun blockScreenCapture(enable: Boolean, promise: Promise) {
-    val activity = currentActivity ?: run {
-      promise.reject(
-        "NativePluginError", "Cannot block screen capture, activity is null."
-      )
-      return
-    }
-
-    runOnUiThread {
-      try {
-        Talsec.blockScreenCapture(activity, enable)
-        promise.resolve("Screen capture is now ${if (enable) "Blocked" else "Enabled"}.")
-      } catch (e: Exception) {
-        promise.reject("NativePluginError", "Error in blockScreenCapture: ${e.message}")
-      }
-    }
+  override fun onEmulatorDetected() {
+    sendOngoingPluginResult("simulator", null)
   }
 
-  /**
-   * Method Returns whether screen capture is blocked or not
-   * @return boolean for is screem capture blocked or not
-   */
-  @ReactMethod
-  fun isScreenCaptureBlocked(promise: Promise) {
-    try {
-      val isBlocked = Talsec.isScreenCaptureBlocked()
-      promise.resolve(isBlocked)
-    } catch (e: Exception) {
-      promise.reject("NativePluginError", "Error in isScreenCaptureBlocked: ${e.message}")
-    }
+  override fun onTamperDetected() {
+    sendOngoingPluginResult("appIntegrity", null)
   }
 
-  private fun buildTalsecConfig(config: ReadableMap): TalsecConfig {
-    val androidConfig = config.getMapThrowing("androidConfig")
-    val packageName = androidConfig.getStringThrowing("packageName")
-    val certificateHashes = androidConfig.getArraySafe("certificateHashes")
+  override fun onUntrustedInstallationSourceDetected() {
+    sendOngoingPluginResult("unofficialStore", null)
+  }
 
-    val talsecBuilder = TalsecConfig.Builder(packageName, certificateHashes)
-      .watcherMail(config.getString("watcherMail"))
-      .supportedAlternativeStores(androidConfig.getArraySafe("supportedAlternativeStores"))
-      .prod(config.getBooleanSafe("isProd"))
+  override fun onHookDetected() {
+    sendOngoingPluginResult("hooks", null)
+  }
 
-    if (androidConfig.hasKey("malwareConfig")) {
-      val malwareConfig = androidConfig.getMapThrowing("malwareConfig")
-      talsecBuilder.whitelistedInstallationSources(malwareConfig.getArraySafe("whitelistedInstallationSources"))
-      talsecBuilder.blacklistedHashes(malwareConfig.getArraySafe("blacklistedHashes"))
-      talsecBuilder.blacklistedPackageNames(malwareConfig.getArraySafe("blacklistedPackageNames"))
-      talsecBuilder.suspiciousPermissions(malwareConfig.getNestedArraySafe("suspiciousPermissions"))
+  override fun onDeviceBindingDetected() {
+    sendOngoingPluginResult("device binding", null)
+  }
+
+  override fun deviceStateChangeDetected(threatType: String) {
+    sendOngoingPluginResult(threatType, null)
+  }
+
+  private fun sendOngoingPluginResult(eventName: String, params: WritableMap?) {
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit(eventName, params)
+  }
+
+  private fun parseTalsecConfig(config: ReadableMap): TalsecConfig {
+    val androidConfig = config.getMap("androidConfig")
+        ?: throw IllegalArgumentException("androidConfig is missing")
+
+    val packageName = androidConfig.getString("packageName")
+        ?: throw IllegalArgumentException("packageName is required")
+
+    val certificateHashes = mutableListOf<String>()
+    if (androidConfig.hasKey("certificateHashes")) {
+        val hashesArray = androidConfig.getArray("certificateHashes")
+        if (hashesArray != null) {
+            for (i in 0 until hashesArray.size()) {
+                hashesArray.getString(i)?.let { certificateHashes.add(it) }
+            }
+        }
+    } else {
+        throw IllegalArgumentException("certificateHashes is required")
     }
 
-    return talsecBuilder.build()
+    val alternativeStores = mutableListOf<String>()
+    if (androidConfig.hasKey("supportedAlternativeStores")) {
+        val stores = androidConfig.getArray("supportedAlternativeStores")
+        if (stores != null) {
+            for (i in 0 until stores.size()) {
+                stores.getString(i)?.let { alternativeStores.add(it) }
+            }
+        }
+    }
+
+    return TalsecConfig(
+      packageName,
+      certificateHashes.toTypedArray(),
+      null, 
+      alternativeStores.toTypedArray()
+  )
   }
+
 
   companion object {
     const val NAME = "FreeraspReactNative"
-    private val THREAT_CHANNEL_NAME = (10000..999999999).random()
-      .toString() // name of the channel over which threat callbacks are sent
-    private val THREAT_CHANNEL_KEY = (10000..999999999).random()
-      .toString() // key of the argument map under which threats are expected
-    private val MALWARE_CHANNEL_KEY = (10000..999999999).random()
-      .toString() // key of the argument map under which malware data is expected
-
-    private val backgroundHandlerThread = HandlerThread("BackgroundThread").apply { start() }
-    private val backgroundHandler = Handler(backgroundHandlerThread.looper)
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    private lateinit var appReactContext: ReactApplicationContext
-
-    internal var talsecStarted = false
-
-    private fun notifyListeners(threat: Threat) {
-      val params = Arguments.createMap()
-      params.putInt(THREAT_CHANNEL_KEY, threat.value)
-      appReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-        .emit(THREAT_CHANNEL_NAME, params)
-    }
-
-    /**
-     * Sends malware detected event to React Native
-     */
-    private fun notifyMalware(suspiciousApps: MutableList<SuspiciousAppInfo>) {
-      // Perform the malware encoding on a background thread
-      backgroundHandler.post {
-
-        val encodedSuspiciousApps = suspiciousApps.toEncodedWritableArray(appReactContext)
-
-        mainHandler.post {
-          val params = Arguments.createMap()
-          params.putInt(THREAT_CHANNEL_KEY, Threat.Malware.value)
-          params.putArray(
-            MALWARE_CHANNEL_KEY, encodedSuspiciousApps
-          )
-
-          appReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit(THREAT_CHANNEL_NAME, params)
-        }
-      }
-    }
-  }
-
-  internal object ThreatListener : FreeraspThreatHandler.TalsecReactNative {
-    override fun threatDetected(threatType: Threat) {
-      notifyListeners(threatType)
-    }
-
-    override fun malwareDetected(suspiciousApps: MutableList<SuspiciousAppInfo>) {
-      notifyMalware(suspiciousApps)
-    }
   }
 }
